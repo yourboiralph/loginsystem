@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AuthenticateUserRequest;
+use App\Http\Requests\CreateUserRequest;
 use App\Http\Resources\AuthenticatedUserResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -42,5 +43,37 @@ class AuthController extends Controller
         $user = $request->user();
         $user->tokens()->delete();
         return 'Logout!';
+    }
+    
+    public function create(CreateUserRequest $request) 
+    {
+        $name = $request->name;
+        $email = $request->email;
+        $password = $request->password;
+
+        $user = User::create([
+            'name' => $name,
+            'email' => $email,
+            'password' => bcrypt($password)
+        ]);
+
+        $request = (object)[
+            'user' => new UserResource($user),
+            'token' =>$user->createToken('auth-token')->plainTextToken
+        ];
+        return new AuthenticatedUserResource($request);            
+    }
+
+    public function fetchUsers() 
+    {
+        $users = User::all();
+
+        if ($users->count() > 0) {
+            return response()->json(['users' => $users]);
+        } else {
+            return response()->json([
+                'users' => 'No Users Found'
+            ]);
+        }
     }
 }
